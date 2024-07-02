@@ -1,0 +1,13 @@
+{
+    "domain": "huarunrq",
+    "name": "HuaRunRQ",
+    "version": "1.0",
+    "requirements": ["requests>=2.25.1"],
+    "dependencies": [],
+    "codeowners": ["@xxlxmd"],
+    "config_flow": true,
+    "documentation": "https://www.github.com/xxlxmd/huarunrq",
+    "issue_tracker": "https://www.github.com/huarunrq/issues",
+    "icon":"icon.png"
+  }
+  
