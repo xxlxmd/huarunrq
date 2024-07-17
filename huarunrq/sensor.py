@@ -9,12 +9,13 @@ import random
 import json
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.util import Throttle
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,8 +44,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # 确保在创建HuaRunRQSensor对象时提供了所有必需的参数
     async_add_entities([HuaRunRQSensor(name, cno)], True)
 
-
-
 class HuaRunRQSensor(Entity):
     """Representation of a Sensor."""
 
@@ -53,6 +52,7 @@ class HuaRunRQSensor(Entity):
         self._state = None
         self._name = name
         self._cno = cno
+        self._attributes = {}
 
     @property
     def name(self):
@@ -64,19 +64,37 @@ class HuaRunRQSensor(Entity):
         """Return the state of the sensor."""
         return self._state
 
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes of the sensor."""
+        return self._attributes
+
+    @property
+    def device_info(self):
+        """Return device information about this entity."""
+        return DeviceInfo(
+            identifiers={(self._cno,)},
+            name=self._name,
+            manufacturer="HuaRunRQ",
+            model="Gas Sensor",
+            entry_type=DeviceEntryType.SERVICE,
+        )
+
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         """Fetch new state data for the sensor."""
         try:
-            # 使用你提供的业务逻辑代码获取totalGasBalance
-            self._state = self.get_total_gas_balance()
+            # 使用你提供的业务逻辑代码获取所有数据
+            data = self.get_data()
+            self._state = data["totalGasBalance"]
+            self._attributes = data
         except Exception as e:
             _LOGGER.error("Error fetching data: %s", e)
             self._state = None
+            self._attributes = {}
 
-    def get_total_gas_balance(self):
-        """Get the total gas balance from the API."""
-        # 以下是你提供的业务逻辑代码
+    def get_data(self):
+        """Get the data from the API."""
         public_key_pem = '''-----BEGIN PUBLIC KEY-----
         MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAIi4Gb8iOGcc05iqNilFb1gM6/iG4fSiECeEaEYN2cxaBVT+6zgp+Tp0TbGVqGMIB034BLaVdNZZPnqKFH4As8UCAwEAAQ==
         -----END PUBLIC KEY-----'''
@@ -109,6 +127,6 @@ class HuaRunRQSensor(Entity):
         }   
         response = requests.get(api_url, headers=headers)
 
-        # 解析响应中的totalGasBalance
+        # 解析响应中的所有数据
         data = response.json()
-        return data["dataResult"]["totalGasBalance"]
+        return data["dataResult"]
